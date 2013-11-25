@@ -1,0 +1,555 @@
+package net.neevek.android.widget;
+
+import android.content.Context;
+import android.os.Build;
+import android.util.AttributeSet;
+import android.view.*;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.Scroller;
+
+/**
+ * @author neevek <i at neevek.net>
+ * @version v1.0.0 finished on Nov. 24, 2013 (a rainy Sunday in GuangZhou)
+ *
+ * This class implements the bounce effect & pull-to-refresh feature for
+ * ListView(the implementation can also be applied to ExpandableListView).
+ *
+ * For the bounce effect, the implementation simply intercepts touch events
+ * and detects if the scrolling has reached the top or bottom edge, if so, we
+ * call scrollTo() to scroll the entire the ListView off the screen, and then
+ * with a Scroller, we compute the Y scroll positions and create a smooth
+ * bounce effect.
+ *
+ * For pull-to-refresh, the implementation uses a header view which implements
+ * the PullToRefreshCallback interface as the indicator view for displaying
+ * "Pull to refresh", "Release to refresh", "Loading..." and an arrow image.
+ * Of course, you can implement PullToRefreshCallback and write your own
+ * PullToRefreshHeaderView, as long as you follow some requirements for
+ * the layout of the header view, take the default PullToRefreshHeaderView
+ * as a referenece.
+ *
+ * NOTE: If you do not what the pull-to-refresh feature, you can still use
+ *       OverScrollListView, in that case, OverScrollListView only offers
+ *       you the bounce effect, and that is why it has the name. just remember
+ *       not to call setPullToRefreshHeaderView()
+ */
+public class OverScrollListView extends ListView {
+    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 400;
+
+    // boucing for a fling gesture
+    private Scroller mTouchScroller;
+    // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
+    private Scroller mFlingScroller;
+    private Scroller mCurScroller;
+
+    private float mLastY;
+    private boolean mIsTouching;
+    private boolean mIsBeingTouchScrolled;
+
+    // a threshold to tell whether the user is touch-scrolling
+    private int mTouchSlop;
+
+    private float mScreenDensity;
+
+    // the top-level layout of the header view
+    private PullToRefreshCallback mOrigHeaderView;
+
+    // the layout, of which we will do adjust the height, and on which
+    // we call requestLayout() to cause the view hierarchy to be redrawn
+    private View mHeaderView;
+    // for convenient adjustment of the header view height
+    private ViewGroup.LayoutParams mHeaderViewLayoutParams;
+    // the original height of the header view
+    private int mHeaderViewHeight;
+
+    // user of this pull-to-refresh ListView certainly will register a
+    // a listener, which will be called when a "refresh" action should
+    // be initiated.
+    private OnRefreshListener mOnRefreshListener;
+    private boolean mIsRefreshing;
+    // is finishRefreshing() has just been called?
+    private boolean mCancellingRefreshing;
+
+    public OverScrollListView(Context context) {
+        super(context);
+        init(context);
+    }
+
+    public OverScrollListView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init(context);
+    }
+
+    public OverScrollListView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init(context);
+    }
+
+    private void init(Context context) {
+        mTouchScroller = new Scroller(context, new DecelerateInterpolator(1.4f));
+        mFlingScroller = new Scroller(context, new DecelerateInterpolator(0.6f));
+        mCurScroller = mTouchScroller;
+
+        // on Android 2.3.3, disabling overscroll makes ListView behave weirdly
+        if (Build.VERSION.SDK_INT > 10) {
+            // disable the glow effect at the edges when overscrolling.
+            setOverScrollMode(OVER_SCROLL_NEVER);
+        }
+
+        mScreenDensity = context.getResources().getDisplayMetrics().density;
+        mTouchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+    }
+
+    public void setPullToRefreshHeaderView(View headerView) {
+        if (!(headerView instanceof PullToRefreshCallback)) {
+            throw new IllegalArgumentException("Pull-to-refresh header view must implement PullToRefreshCallback");
+        }
+
+        mOrigHeaderView = (PullToRefreshCallback)headerView;
+        addHeaderView(headerView);
+    }
+
+    @Override
+    public void addHeaderView(View v, Object data, boolean isSelectable) {
+        if (v instanceof ViewGroup) {
+            mHeaderView = ((ViewGroup) v).getChildAt(0);    // pay attention to this
+            if (mHeaderView == null ||
+                    (!(mHeaderView instanceof LinearLayout) &&
+                    !(mHeaderView instanceof RelativeLayout))) {
+                throw new IllegalArgumentException("Pull-to-refresh header view must have " +
+                        "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
+            }
+        } else {
+            throw new IllegalArgumentException("Pull-to-refresh header view must have " +
+                    "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
+        }
+
+        super.addHeaderView(v, data, isSelectable);
+
+        mHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // after the first "laying-out", we get the original height of header view
+                mHeaderViewHeight = mHeaderView.getHeight();
+
+                if (Build.VERSION.SDK_INT >= 16) {
+                    mHeaderView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                } else {
+                    mHeaderView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                }
+
+                mHeaderViewLayoutParams = mHeaderView.getLayoutParams();
+
+                // hide the header view
+                setHeaderViewHeight(0);
+            }
+        });
+    }
+
+    public void setOnRefreshListener(OnRefreshListener callback) {
+        mOnRefreshListener = callback;
+    }
+
+    public void finishRefreshing() {
+        if (mIsRefreshing) {
+            mCancellingRefreshing = true;
+            mIsRefreshing = false;
+
+            if (mOrigHeaderView != null) {
+                mOrigHeaderView.onEndRefreshing();
+            }
+
+            mCurScroller.forceFinished(true);
+
+            // hide the header view, with a smooth bouncing effect
+            springback(false, -mHeaderViewHeight);
+//            setSelection(0);
+        }
+    }
+
+    @Override
+    protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
+        if (!isTouchEvent && mCurScroller.isFinished()) {
+            final int scrollDuration = (int)Math.abs(getScrollDeltaInDp(deltaY) * 2.2f);
+
+            // to diminish the over-scroll range
+            deltaY /= 2;
+
+            if (deltaY != 0) {
+                // we have ensured "isTouchEvent=false" in the if-statement check, so we are sure here that
+                // it is a fling gesture.
+                mFlingScroller.startScroll(0, 0, 0, deltaY, Math.min(scrollDuration, DEFAULT_MAX_OVER_SCROLL_DURATION));
+                mCurScroller = mFlingScroller;
+
+                postInvalidate();
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                // for whatever reason, stop the scroller when the user *might*
+                // start new touch-scroll gestures.
+                mCurScroller.forceFinished(true);
+
+                mLastY = ev.getRawY();
+                mIsTouching = true;
+                mCancellingRefreshing = false;
+                break;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_MOVE:
+                float y = ev.getRawY();
+                int deltaY = (int)(y - mLastY);
+
+                if (deltaY == 0) {
+                    return true;
+                }
+
+                if (mIsBeingTouchScrolled) {
+                    if (getChildCount() > 0) {
+                        handleTouchScroll(deltaY);
+                    }
+
+                    mLastY = y;
+                } else if (!mIsBeingTouchScrolled && Math.abs(deltaY) > mTouchSlop) {
+                    // check if the delta-y has exceeded the threshold
+                    mIsBeingTouchScrolled = true;
+                    mLastY = y;
+                    break;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                mIsTouching = false;
+                mIsBeingTouchScrolled = false;
+
+                // 'getScrollY != 0' means thatcontent of the ListView is off screen.
+                // Or if it is not in "refreshing" state while height of the header view
+                // is greater than 0, we must set it to 0 with a smooth bounce effect
+                if (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0)) {
+                    springback(false);
+
+                    // it is safe to digest the touch events here
+                    return true;
+                }
+
+                break;
+        }
+
+        // let the original ListView handle the touch events
+        boolean result = super.onTouchEvent(ev);
+        int curScrollY = getScrollY();
+
+        // if not in 'refreshing' state or scrollY is less than zero, and height of
+        // header view is greater than zero. we should keep the the first item of the
+        // ListView always at the top(we are decreasing height of the header view, without
+        // calling setSelection(0), we will decrease height of the header view and scroll
+        // the ListView itself at the same time, which will cause scrolling too fast
+        // when decreasing height of the header view)
+        if ((!mIsRefreshing  && getCurrentHeaderViewHeight() > 0 ) || curScrollY < 0) {
+            setSelection(0);
+        } else if (curScrollY > 0) {
+            setSelection(getCount() - 1);
+        }
+
+        return result;
+    }
+
+    private void handleTouchScroll(int deltaY) {
+        boolean reachTopEdge = reachTopEdge();
+        boolean reachBottomEdge = reachBottomEdge();
+        if (!reachTopEdge && !reachBottomEdge) {
+            // since we are at the middle of the ListView, we don't
+            // need to handle any touch events
+            return;
+        }
+
+        final int scrollY = getScrollY();
+
+        int listViewHeight = getHeight();
+        // 0.4f is just a number that gives OK effect out of many tests. it means nothing special
+        float scale = ((float)listViewHeight - Math.abs(scrollY) - getCurrentHeaderViewHeight()) / getHeight() * 0.4f;
+
+        int newDeltaY = Math.round(deltaY * scale);
+
+        if (newDeltaY != 0) {
+            deltaY = newDeltaY;
+        }
+
+        if (reachTopEdge) {
+            if (deltaY > 0) {
+                scrollDown(deltaY);
+            } else {
+                scrollUp(deltaY);
+            }
+        } else {
+            if (deltaY > 0) {
+                if (scrollY > 0) {
+                    // when scrollY is greater than 0, it means we reach the bottom of the list
+                    // and the ListView is scrolled off the screen from the bottom, now we
+                    // scrollDown() to scroll it back, otherwise, we just let the original ListView
+                    // handle the scroll_down events
+                    scrollDown(Math.min(deltaY, scrollY));
+                }
+            } else {
+                scrollUp(deltaY);
+            }
+        }
+    }
+
+    private boolean reachTopEdge() {
+        int childCount = getChildCount();
+        if (childCount > 0) {
+            return (getFirstVisiblePosition() == 0) && (getChildAt(0).getTop() == 0);
+        } else {
+            return true;
+        }
+    }
+
+    private boolean reachBottomEdge() {
+        int childCount = getChildCount();
+        if (childCount > 0) {
+            return (getLastVisiblePosition() == getCount() - 1) &&
+                    (getChildAt(childCount - 1).getBottom() <= getHeight());
+        }
+        return true;
+    }
+
+    private void springback(boolean flingSpringback) {
+        mCurScroller.forceFinished(true);
+
+        int scrollY = getScrollY();
+
+        int curHeaderViewHeight = getCurrentHeaderViewHeight();
+        if (curHeaderViewHeight == mHeaderViewHeight) {
+            if (!mIsRefreshing && mOrigHeaderView != null) {
+                mIsRefreshing = true;
+
+                mOrigHeaderView.onStartRefreshing();
+
+                if (mOnRefreshListener != null) {
+                    mOnRefreshListener.onRefresh();
+                }
+            }
+        } else {
+            scrollY -= curHeaderViewHeight;
+        }
+
+        if (scrollY != 0) {
+            springback(flingSpringback, scrollY);
+        }
+    }
+
+    /**
+     * @param flingSpringback - whehter this springback is caused by a fling or touch-scroll gesture?
+     */
+    private void springback(boolean flingSpringback, int scrollY) {
+        final int springBackDuration = (int)Math.abs(getScrollDeltaInDp(scrollY) * 4.f);
+
+        if (flingSpringback) {
+            mCurScroller = mFlingScroller;
+        } else {
+            mCurScroller = mTouchScroller;
+        }
+
+        mCurScroller.startScroll(0, scrollY, 0, -scrollY, Math.min(springBackDuration, DEFAULT_MAX_OVER_SCROLL_DURATION));
+
+        postInvalidate();
+    }
+
+    @Override
+    public void computeScroll() {
+        if (mCurScroller.computeScrollOffset()) {
+            int scrollY = getScrollY();
+
+            // if not in "refreshing" state, we must decrease height of the
+            // header view to 0
+            if (!mIsRefreshing && getCurrentHeaderViewHeight() > 0) {
+                scrollY -= getCurrentHeaderViewHeight();
+            }
+
+            final int deltaY = mCurScroller.getCurrY() - scrollY;
+
+            if (deltaY < 0) {
+                scrollDown(-deltaY);
+            } else {
+                scrollUp(-deltaY);
+            }
+
+            if (mCancellingRefreshing && mOnRefreshListener != null && deltaY == 0) {
+                mCancellingRefreshing = false;
+
+                mOnRefreshListener.onRefreshAnimationEnd();
+            }
+        } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
+            springback(true);
+        }
+
+        super.computeScroll();
+    }
+
+    /**
+     * scrollDown() does 2 things:
+     *
+     * 1. check if height of the header view is greater than 0, if so, decrease it to 0
+     *
+     * 2. scroll content of the ListView off the screen any there's any deltaY left(i.e.
+     *    deltaY is not 0)
+     */
+    private void scrollDown(int deltaY) {
+        if (!mIsRefreshing && getScrollY() <= 0 && reachTopEdge()) {
+            final int curHeaderViewHeight = getCurrentHeaderViewHeight();
+            if (curHeaderViewHeight < mHeaderViewHeight) {
+                int newHeaderViewHeight = curHeaderViewHeight + deltaY;
+                if (newHeaderViewHeight < mHeaderViewHeight) {
+                    setHeaderViewHeight(newHeaderViewHeight);
+                    return ;
+                } else {
+                    setHeaderViewHeight(mHeaderViewHeight);
+                    deltaY = newHeaderViewHeight - mHeaderViewHeight;
+                }
+            }
+        }
+
+        scrollBy(0, -deltaY);
+    }
+
+    /**
+     * scrollUp() does 3 things:
+     *
+     * 1. if scrollY is less than 0, it means we have scrolled the list off the screen
+     *    from the top, now we scroll back and make the list to reach the top edge of
+     *    the screen.
+     *
+     * 2. check height of the header view and see if it is greater than 0, if so, we
+     *    decrease it and make it zero.
+     *
+     * 3. now check if we have scrolled the list to reach to bottom of the screen, if so
+     *    we scroll the list off the screen from the bottom.
+     */
+    private void scrollUp(int deltaY) {
+        final int scrollY = getScrollY();
+        if (scrollY < 0) {
+            if (scrollY < deltaY) {     // both scrollY and deltaY are less than 0
+                scrollBy(0, -deltaY);
+                return;
+            } else {
+                scrollTo(0, 0);
+                deltaY -= scrollY;
+
+                if (deltaY == 0) {
+                    return;
+                }
+            }
+        }
+
+        if (!mIsRefreshing) {
+            int curHeaderViewHeight = getCurrentHeaderViewHeight();
+            if (curHeaderViewHeight > 0) {
+
+                int newHeaderViewHeight = curHeaderViewHeight + deltaY;
+                if (newHeaderViewHeight > 0) {
+                    setHeaderViewHeight(newHeaderViewHeight);
+
+                    return;
+                } else {
+                    setHeaderViewHeight(0);
+
+                    deltaY = newHeaderViewHeight;
+                }
+            }
+        }
+
+        if (reachBottomEdge()) {
+            scrollBy(0, -deltaY);
+        }
+    }
+
+    @Override
+    public void scrollTo(int x, int y) {
+        super.scrollTo(x, y);
+
+        if (mOrigHeaderView != null && y < 0 && !mIsRefreshing) {
+            int curTotalScrollY = getCurrentHeaderViewHeight() + (-y);
+            mOrigHeaderView.onPull(curTotalScrollY);
+        }
+    }
+
+    private void setHeaderViewHeight(int height) {
+        if (mHeaderViewLayoutParams != null && (mHeaderViewLayoutParams.height != 0 || height != 0)) {
+            int oldHeight = mHeaderViewLayoutParams.height;
+
+            mHeaderViewLayoutParams.height = height;
+
+            // if mHeaderView is visiable(I mean within the confines of the visible screen), we should
+            // request the mHeaderView to re-layout itself, if mHeaderView is not visibble, we should
+            // redraw the ListView itself, which ensures correct scroll position of the ListView.
+            if (mHeaderView.isShown()) {
+                mHeaderView.requestLayout();
+            } else {
+                invalidate();
+            }
+
+            if (mOrigHeaderView != null && !mIsRefreshing && !mCancellingRefreshing) {
+                mOrigHeaderView.onPull(height);
+
+                if (oldHeight < mHeaderViewHeight && height == mHeaderViewHeight) {
+                    mOrigHeaderView.onReachAboveHeaderViewHeight();
+                } else if (oldHeight == mHeaderViewHeight && height < mHeaderViewHeight) {
+                    mOrigHeaderView.onReachBelowHeaderViewHeight();
+                }
+            }
+        }
+    }
+
+    private int getCurrentHeaderViewHeight() {
+        if (mHeaderViewLayoutParams != null) {
+            return mHeaderViewLayoutParams.height;
+        }
+        return 0;
+    }
+
+    private int getScrollDeltaInDp(int deltaInPx) {
+        return px2dp(deltaInPx);
+    }
+
+    private int px2dp(float pxValue) {
+        return (int)(pxValue / mScreenDensity - 0.5f);
+    }
+
+
+    /**
+     * The listener to be registered through OverScrollListView.setOnRefreshListener()
+     */
+    public static interface OnRefreshListener {
+        void onRefresh();
+        void onRefreshAnimationEnd();
+    }
+
+    /**
+     * The interface to be implemented by header view to be used
+     * with OverScrollListView
+     */
+    public interface PullToRefreshCallback {
+        // scrollY = how far have we pulled?
+        void onPull(int scrollY);
+
+        void onReachAboveHeaderViewHeight();
+        void onReachBelowHeaderViewHeight();
+
+        void onStartRefreshing();
+        void onEndRefreshing();
+    }
+}

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<net.neevek.android.widget.PullToRefreshHeaderView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+        >
+    <!--
+        gravity="bottom" is important, which ensures that
+        the header view when shown, has an effect of being pulled from the bottom
+
+        The following redundant RelativeLayouts are also necessary, which ensure that
+        when the header view is being pulled(height is being increased), the ImageViews
+        and TextViews inside will always remain the original height(not squeezed)
+    -->
+    <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="fill_parent"
+            android:layout_height="@dimen/overscroll_listview_header_height"
+            android:background="#ffcccccc"
+            android:gravity="bottom"
+            >
+        <RelativeLayout
+                android:layout_width="fill_parent"
+                android:layout_height="@dimen/overscroll_listview_header_height"
+                android:gravity="center"
+                >
+            <ImageView
+                    android:id="@+id/iv_down_arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/down_arrow"
+                    android:layout_centerVertical="true"
+                    />
+
+            <ProgressBar
+                    android:id="@+id/pb_refreshing"
+                    style="@android:style/Widget.ProgressBar.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    />
+
+            <TextView
+                    android:id="@+id/tv_refresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:minWidth="120dip"
+                    android:text="Pull to refresh!"
+                    android:gravity="center"
+                    android:textColor="#ff000000"
+                    android:layout_marginLeft="40dip"
+                    />
+        </RelativeLayout>
+    </LinearLayout>
+</net.neevek.android.widget.PullToRefreshHeaderView>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        >
+    <net.neevek.android.widget.OverScrollListView
+            android:id="@+id/listview"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:cacheColorHint="#0000"
+            android:divider="@null"
+            android:dividerHeight="1px"
+            android:fadingEdge="none"
+            android:layout_weight="1"
+            />
+    <Button
+        android:id="@+id/btn_done_refreshing"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Finish Refreshing"
+        />
+</LinearLayout>
+
