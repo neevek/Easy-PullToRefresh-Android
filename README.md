@@ -1,9 +1,11 @@
 Easy-PullToRefresh-Android
 ==========================
 
-This pull-to-refresh implementation is inspired by [XListView](https://github.com/Maxwin-z/XListView-Android) with the idea of adjusting height of the header view while pulling the `ListView`.
+**OverScrollListView** is a drop-in replacement for `ListView`.
 
 The **OverScrollListView** class implements the bounce effect & pull-to-refresh feature for ListView(this implementation can also be applied to `ExpandableListView`).
+
+This pull-to-refresh implementation is inspired by [XListView](https://github.com/Maxwin-z/XListView-Android) with the idea of adjusting height of the header view while pulling the `ListView`.
 
 For the bounce effect, it simply intercepts touch events and detects if the scrolling has reached the top or bottom edge, if so, we call scrollTo() to scroll the entire the `ListView` off the screen, and then with a `Scroller`, we compute the Y scroll positions and create a smooth bounce effect.
 
