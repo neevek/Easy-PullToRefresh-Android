@@ -5,10 +5,7 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.view.*;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.Scroller;
+import android.widget.*;
 
 /**
  * @author neevek <i at neevek.net>
@@ -39,11 +36,8 @@ import android.widget.Scroller;
 public class OverScrollListView extends ListView {
     private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 400;
 
-    // boucing for a fling gesture
-    private Scroller mTouchScroller;
     // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
-    private Scroller mFlingScroller;
-    private Scroller mCurScroller;
+    private Scroller mScroller;
 
     private float mLastY;
     private boolean mIsTouching;
@@ -51,8 +45,8 @@ public class OverScrollListView extends ListView {
 
     // a threshold to tell whether the user is touch-scrolling
     private int mTouchSlop;
-
-    private float mScreenDensity;
+    private int mMinimumVelocity;
+    private int mMaximumVelocity;
 
     // the top-level layout of the header view
     private PullToRefreshCallback mOrigHeaderView;
@@ -89,9 +83,7 @@ public class OverScrollListView extends ListView {
     }
 
     private void init(Context context) {
-        mTouchScroller = new Scroller(context, new DecelerateInterpolator(1.4f));
-        mFlingScroller = new Scroller(context, new DecelerateInterpolator(0.6f));
-        mCurScroller = mTouchScroller;
+        mScroller = new Scroller(context, new DecelerateInterpolator(1.4f));
 
         // on Android 2.3.3, disabling overscroll makes ListView behave weirdly
         if (Build.VERSION.SDK_INT > 10) {
@@ -99,8 +91,11 @@ public class OverScrollListView extends ListView {
             setOverScrollMode(OVER_SCROLL_NEVER);
         }
 
-        mScreenDensity = context.getResources().getDisplayMetrics().density;
-        mTouchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+        final ViewConfiguration configuration = ViewConfiguration.get(getContext());
+
+        mTouchSlop = configuration.getScaledTouchSlop();
+        mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
+        mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
     }
 
     public void setPullToRefreshHeaderView(View headerView) {
@@ -162,32 +157,33 @@ public class OverScrollListView extends ListView {
                 mOrigHeaderView.onEndRefreshing();
             }
 
-            mCurScroller.forceFinished(true);
+            mScroller.forceFinished(true);
 
             // hide the header view, with a smooth bouncing effect
-            springback(false, -mHeaderViewHeight);
+            springback(-mHeaderViewHeight);
 //            setSelection(0);
         }
     }
 
-    @Override
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
-        if (!isTouchEvent && mCurScroller.isFinished()) {
-            final int scrollDuration = (int)Math.abs(getScrollDeltaInDp(deltaY) * 2.2f);
+        if (!isTouchEvent && mScroller.isFinished()) {
+            mVelocityTracker.computeCurrentVelocity(50, mMaximumVelocity);
+            int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
-            // to diminish the over-scroll range
-            deltaY /= 2;
-
-            if (deltaY != 0) {
-                // we have ensured "isTouchEvent=false" in the if-statement check, so we are sure here that
-                // it is a fling gesture.
-                mFlingScroller.startScroll(0, 0, 0, deltaY, Math.min(scrollDuration, DEFAULT_MAX_OVER_SCROLL_DURATION));
-                mCurScroller = mFlingScroller;
-
-                postInvalidate();
+            if ((Math.abs(yVelocity) > mMinimumVelocity)) {
+                mScroller.fling(0, getScrollY(), 0, -yVelocity, 0, 0, -mMaximumVelocity, mMaximumVelocity);
+                postInvalidateOnAnimation();
             }
         }
         return true;
+    }
+
+    private void initOrResetVelocityTracker() {
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        } else {
+            mVelocityTracker.clear();
+        }
     }
 
     @Override
@@ -196,18 +192,26 @@ public class OverScrollListView extends ListView {
             case MotionEvent.ACTION_DOWN:
                 // for whatever reason, stop the scroller when the user *might*
                 // start new touch-scroll gestures.
-                mCurScroller.forceFinished(true);
+                mScroller.forceFinished(true);
 
                 mLastY = ev.getRawY();
                 mIsTouching = true;
                 mCancellingRefreshing = false;
+
+                initOrResetVelocityTracker();
+                mVelocityTracker.addMovement(ev);
                 break;
         }
         return super.onInterceptTouchEvent(ev);
     }
 
+
+    private VelocityTracker mVelocityTracker;
+
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        mVelocityTracker.addMovement(ev);
+
         switch (ev.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 float y = ev.getRawY();
@@ -223,7 +227,7 @@ public class OverScrollListView extends ListView {
                     }
 
                     mLastY = y;
-                } else if (!mIsBeingTouchScrolled && Math.abs(deltaY) > mTouchSlop) {
+                } else if (Math.abs(deltaY) > mTouchSlop) {
                     // check if the delta-y has exceeded the threshold
                     mIsBeingTouchScrolled = true;
                     mLastY = y;
@@ -239,12 +243,11 @@ public class OverScrollListView extends ListView {
                 // Or if it is not in "refreshing" state while height of the header view
                 // is greater than 0, we must set it to 0 with a smooth bounce effect
                 if (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0)) {
-                    springback(false);
+                    springback();
 
                     // it is safe to digest the touch events here
                     return true;
                 }
-
                 break;
         }
 
@@ -327,8 +330,8 @@ public class OverScrollListView extends ListView {
         return true;
     }
 
-    private void springback(boolean flingSpringback) {
-        mCurScroller.forceFinished(true);
+    private void springback() {
+        mScroller.forceFinished(true);
 
         int scrollY = getScrollY();
 
@@ -348,30 +351,18 @@ public class OverScrollListView extends ListView {
         }
 
         if (scrollY != 0) {
-            springback(flingSpringback, scrollY);
+            springback(scrollY);
         }
     }
 
-    /**
-     * @param flingSpringback - whehter this springback is caused by a fling or touch-scroll gesture?
-     */
-    private void springback(boolean flingSpringback, int scrollY) {
-        final int springBackDuration = (int)Math.abs(getScrollDeltaInDp(scrollY) * 4.f);
-
-        if (flingSpringback) {
-            mCurScroller = mFlingScroller;
-        } else {
-            mCurScroller = mTouchScroller;
-        }
-
-        mCurScroller.startScroll(0, scrollY, 0, -scrollY, Math.min(springBackDuration, DEFAULT_MAX_OVER_SCROLL_DURATION));
-
-        postInvalidate();
+    private void springback(int scrollY) {
+        mScroller.startScroll(0, scrollY, 0, -scrollY, DEFAULT_MAX_OVER_SCROLL_DURATION);
+        postInvalidateOnAnimation();
     }
 
     @Override
     public void computeScroll() {
-        if (mCurScroller.computeScrollOffset()) {
+        if (mScroller.computeScrollOffset()) {
             int scrollY = getScrollY();
 
             // if not in "refreshing" state, we must decrease height of the
@@ -380,7 +371,7 @@ public class OverScrollListView extends ListView {
                 scrollY -= getCurrentHeaderViewHeight();
             }
 
-            final int deltaY = mCurScroller.getCurrY() - scrollY;
+            final int deltaY = mScroller.getCurrY() - scrollY;
 
             if (deltaY < 0) {
                 scrollDown(-deltaY);
@@ -393,8 +384,9 @@ public class OverScrollListView extends ListView {
 
                 mOnRefreshListener.onRefreshAnimationEnd();
             }
+            postInvalidateOnAnimation();
         } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
-            springback(true);
+            springback();
         }
 
         super.computeScroll();
@@ -520,15 +512,6 @@ public class OverScrollListView extends ListView {
         }
         return 0;
     }
-
-    private int getScrollDeltaInDp(int deltaInPx) {
-        return px2dp(deltaInPx);
-    }
-
-    private int px2dp(float pxValue) {
-        return (int)(pxValue / mScreenDensity - 0.5f);
-    }
-
 
     /**
      * The listener to be registered through OverScrollListView.setOnRefreshListener()
