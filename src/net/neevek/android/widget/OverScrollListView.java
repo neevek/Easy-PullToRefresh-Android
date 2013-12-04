@@ -34,7 +34,7 @@ import android.widget.*;
  *       not to call setPullToRefreshHeaderView()
  */
 public class OverScrollListView extends ListView {
-    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 400;
+    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 300;
 
     // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
     private Scroller mScroller;
@@ -83,7 +83,7 @@ public class OverScrollListView extends ListView {
     }
 
     private void init(Context context) {
-        mScroller = new Scroller(context, new DecelerateInterpolator(1.4f));
+        mScroller = new Scroller(context, new DecelerateInterpolator());
 
         // on Android 2.3.3, disabling overscroll makes ListView behave weirdly
         if (Build.VERSION.SDK_INT > 10) {
@@ -172,7 +172,7 @@ public class OverScrollListView extends ListView {
 
             if ((Math.abs(yVelocity) > mMinimumVelocity)) {
                 mScroller.fling(0, getScrollY(), 0, -yVelocity, 0, 0, -mMaximumVelocity, mMaximumVelocity);
-                postInvalidateOnAnimation();
+                postInvalidate();
             }
         }
         return true;
@@ -357,7 +357,7 @@ public class OverScrollListView extends ListView {
 
     private void springback(int scrollY) {
         mScroller.startScroll(0, scrollY, 0, -scrollY, DEFAULT_MAX_OVER_SCROLL_DURATION);
-        postInvalidateOnAnimation();
+        postInvalidate();
     }
 
     @Override
@@ -384,7 +384,7 @@ public class OverScrollListView extends ListView {
 
                 mOnRefreshListener.onRefreshAnimationEnd();
             }
-            postInvalidateOnAnimation();
+            postInvalidate();
         } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
             springback();
         }
