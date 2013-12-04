@@ -10,6 +10,7 @@ import android.widget.*;
 /**
  * @author neevek <i at neevek.net>
  * @version v1.0.0 finished on Nov. 24, 2013 (a rainy Sunday in GuangZhou)
+ * @version v1.0.3 finished at 2:49 a.m. on Dec. 5, 2013
  *
  * This class implements the bounce effect & pull-to-refresh feature for
  * ListView(the implementation can also be applied to ExpandableListView).
