@@ -1,6 +1,7 @@
 package net.neevek.android.widget;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -51,7 +52,11 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
                 mTvRefresh = (TextView)findViewById(R.id.tv_refresh);
                 mProgressBar = (ProgressBar)findViewById(R.id.pb_refreshing);
 
-                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                if (Build.VERSION.SDK_INT >= 16) {
+                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                } else {
+                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                }
             }
         });
 
