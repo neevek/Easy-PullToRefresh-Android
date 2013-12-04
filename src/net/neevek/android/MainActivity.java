@@ -2,57 +2,103 @@ package net.neevek.android;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
 import net.neevek.android.widget.OverScrollListView;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends Activity implements OverScrollListView.OnRefreshListener, OverScrollListView.OnLoadMoreListener {
     private final static String TAG = MainActivity.class.getSimpleName();
 
     private OverScrollListView mListView;
+
+    private List<String> mDataList;
+    private ArrayAdapter<String> mAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        findViewById(R.id.btn_done_refreshing).setOnClickListener(this);
-
         mListView = (OverScrollListView)findViewById(R.id.listview);
 
         View header = getLayoutInflater().inflate(R.layout.header, null);
+        View footer = getLayoutInflater().inflate(R.layout.footer, null);
 
         mListView.setPullToRefreshHeaderView(header);
 //        mListView.addHeaderView(header);
+        mListView.setPullToLoadMoreFooterView(footer);
+//        mListView.addFooterView(footer);
 
-        mListView.setOnRefreshListener(new OverScrollListView.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                Log.d(TAG, ">>>> onRefresh called.");
-            }
+        mListView.setOnRefreshListener(this);
+        mListView.setOnLoadMoreListener(this);
 
-            @Override
-            public void onRefreshAnimationEnd() {
-                Log.d(TAG, ">>>> onRefreshAnimationEnd called.");
-            }
-        });
+        initData();
+    }
 
-        String[] arr = new String[25];
-        for (int i = 0; i < arr.length; ++i) {
-            arr[i] = "Item " + i;
+    private void initData() {
+        mDataList = new ArrayList<String>();
+
+        for (int i = 0; i < 25; ++i) {
+            mDataList.add("Item " + i);
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.item, R.id.tv_item, arr);
+        mAdapter = new ArrayAdapter<String>(this, R.layout.item, R.id.tv_item, mDataList);
 
-        mListView.setAdapter(adapter);
+        mListView.setAdapter(mAdapter);
     }
 
     @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btn_done_refreshing:
-                mListView.finishRefreshing();
-                break;
-        }
+    public void onLoadMore() {
+        new Thread(){
+            @Override
+            public void run() {
+                SystemClock.sleep(1000);
+
+                mListView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int i = 0, j = mDataList.size(); i < 10; ++i, ++j) {
+                            mDataList.add("Item " + j);
+                        }
+                        mAdapter.notifyDataSetChanged();
+
+                        boolean reachTheEnd = mDataList.size() >= 55;
+                        mListView.finishLoadingMore(reachTheEnd);
+                        if (reachTheEnd) {
+                            Toast.makeText(MainActivity.this, "Reach the end of the list, no more data to load.", Toast.LENGTH_LONG).show();
+                        }
+
+                    }
+                });
+            }
+        }.start();
+    }
+
+    @Override
+    public void onRefresh() {
+        new Thread(){
+            @Override
+            public void run() {
+                SystemClock.sleep(2000);
+
+                mListView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        initData();
+                        mListView.finishRefreshing();
+                        mListView.resetLoadMoreFooterView();
+                    }
+                });
+            }
+        }.start();
+    }
+
+    @Override
+    public void onRefreshAnimationEnd() {
     }
 }

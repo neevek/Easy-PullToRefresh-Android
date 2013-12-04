@@ -14,7 +14,7 @@
         and TextViews inside will always remain the original height(not squeezed)
     -->
     <LinearLayout
-            android:id="@+id/header"
+            android:id="@+id/vg_header_container"
             android:layout_width="fill_parent"
             android:layout_height="@dimen/overscroll_listview_header_height"
             android:background="#ffcccccc"
@@ -35,7 +35,6 @@
 
             <ProgressBar
                     android:id="@+id/pb_refreshing"
-                    style="@android:style/Widget.ProgressBar.Small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"

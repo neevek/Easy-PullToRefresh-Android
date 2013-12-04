@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<net.neevek.android.widget.PullToLoadMoreFooterView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:background="@drawable/footer_view_selector"
+        >
+
+    <RelativeLayout
+            android:id="@+id/vg_footer_container"
+            android:layout_width="fill_parent"
+            android:layout_height="@dimen/overscroll_listview_header_height"
+            >
+
+        <ProgressBar
+                android:id="@+id/pb_loading"
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:layout_gravity="center_vertical"
+                android:indeterminate="true"
+                android:layout_marginRight="12dip"
+                android:layout_toLeftOf="@+id/tv_load_more"
+                android:visibility="gone"
+                />
+
+        <TextView
+                android:id="@id/tv_load_more"
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:text="Load more"
+                android:gravity="center"
+                android:textColor="#ff000000"
+                android:textSize="18dp"
+                android:layout_centerInParent="true"
+                />
+
+    </RelativeLayout>
+</net.neevek.android.widget.PullToLoadMoreFooterView>
