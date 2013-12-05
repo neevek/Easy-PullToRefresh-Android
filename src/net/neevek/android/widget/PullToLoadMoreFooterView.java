@@ -1,12 +1,7 @@
 package net.neevek.android.widget;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.AttributeSet;
-import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -76,6 +71,7 @@ public class PullToLoadMoreFooterView extends FrameLayout implements OverScrollL
 
     @Override
     public void onStartLoadingMore() {
+        ensuresLoadMoreViewsAvailability();
         mProgressBar.setVisibility(VISIBLE);
         mTvLoadMore.setText("Loading...");
     }
