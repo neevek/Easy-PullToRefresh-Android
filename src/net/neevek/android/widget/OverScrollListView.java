@@ -29,7 +29,7 @@ import android.widget.*;
  * the layout of the header view, take the default PullToRefreshHeaderView
  * as a referenece.
  *
- * NOTE: If you do not what the pull-to-refresh feature, you can still use
+ * NOTE: If you do not want the pull-to-refresh feature, you can still use
  *       OverScrollListView, in that case, OverScrollListView only offers
  *       you the bounce effect, and that is why it has the name. just remember
  *       not to call setPullToRefreshHeaderView()
@@ -74,6 +74,8 @@ public class OverScrollListView extends ListView {
     private boolean mIsLoadingMore;
     private OnLoadMoreListener mOnLoadMoreListener;
 
+    private float mScreenDensity;
+
     public OverScrollListView(Context context) {
         super(context);
         init(context);
@@ -90,7 +92,7 @@ public class OverScrollListView extends ListView {
     }
 
     private void init(Context context) {
-        mScroller = new Scroller(context, new DecelerateInterpolator());
+        mScroller = new Scroller(context, new DecelerateInterpolator(1.3f));
 
         // on Android 2.3.3, disabling overscroll makes ListView behave weirdly
         if (Build.VERSION.SDK_INT > 10) {
@@ -245,7 +247,7 @@ public class OverScrollListView extends ListView {
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
         if (!isTouchEvent && mScroller.isFinished()) {
-            mVelocityTracker.computeCurrentVelocity(50, mMaximumVelocity);
+            mVelocityTracker.computeCurrentVelocity((int)(15 * mScreenDensity), mMaximumVelocity);
             int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
             if ((Math.abs(yVelocity) > mMinimumVelocity)) {
