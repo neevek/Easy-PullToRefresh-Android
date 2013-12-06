@@ -92,6 +92,8 @@ public class OverScrollListView extends ListView {
     }
 
     private void init(Context context) {
+        mScreenDensity = context.getResources().getDisplayMetrics().density;
+
         mScroller = new Scroller(context, new DecelerateInterpolator(1.3f));
 
         // on Android 2.3.3, disabling overscroll makes ListView behave weirdly
