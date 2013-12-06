@@ -38,18 +38,30 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
         mListView.setOnRefreshListener(this);
         mListView.setOnLoadMoreListener(this);
 
+        mDataList = new ArrayList<String>();
+        mAdapter = new ArrayAdapter<String>(this, R.layout.item, R.id.tv_item, mDataList);
+
+        mListView.setAdapter(mAdapter);
+
         initData();
     }
 
     private void initData() {
-        mDataList = new ArrayList<String>();
+        if (mDataList == null) {
+            mDataList = new ArrayList<String>();
+        } else {
+            mDataList.clear();
+        }
 
         for (int i = 0; i < 25; ++i) {
             mDataList.add("Item " + i);
         }
-        mAdapter = new ArrayAdapter<String>(this, R.layout.item, R.id.tv_item, mDataList);
 
-        mListView.setAdapter(mAdapter);
+        mAdapter.notifyDataSetChanged();
+
+        if (mDataList.size() > 0 && !mListView.isLoadingMoreEnabled()) {
+            mListView.enableLoadMore(true);
+        }
     }
 
     @Override
@@ -68,8 +80,9 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
                         mAdapter.notifyDataSetChanged();
 
                         boolean reachTheEnd = mDataList.size() >= 55;
-                        mListView.finishLoadingMore(reachTheEnd);
+                        mListView.finishLoadingMore();
                         if (reachTheEnd) {
+                            mListView.enableLoadMore(false);
                             Toast.makeText(MainActivity.this, "Reach the end of the list, no more data to load.", Toast.LENGTH_LONG).show();
                         }
 

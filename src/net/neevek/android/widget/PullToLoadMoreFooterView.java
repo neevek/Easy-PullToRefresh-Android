@@ -77,12 +77,14 @@ public class PullToLoadMoreFooterView extends FrameLayout implements OverScrollL
     }
 
     @Override
-    public void onEndLoadingMore(boolean noMoreToLoad) {
+    public void onEndLoadingMore() {
         mProgressBar.setVisibility(GONE);
         mTvLoadMore.setText("Load more");
+    }
 
-        if (noMoreToLoad) {
-            getChildAt(0).setVisibility(GONE);
-        }
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        getChildAt(0).setVisibility(visibility);
     }
 }

@@ -70,9 +70,10 @@ public class OverScrollListView extends ListView {
 
     private PullToLoadMoreCallback mSavedFooterView;
     private PullToLoadMoreCallback mFooterView;
-    private int mFooterViewHeight;
     private boolean mIsLoadingMore;
     private OnLoadMoreListener mOnLoadMoreListener;
+
+    private int mLoadingMorePullDistanceThreshold;
 
     private float mScreenDensity;
 
@@ -93,6 +94,7 @@ public class OverScrollListView extends ListView {
 
     private void init(Context context) {
         mScreenDensity = context.getResources().getDisplayMetrics().density;
+        mLoadingMorePullDistanceThreshold = (int)(mScreenDensity * 50);
 
         mScroller = new Scroller(context, new DecelerateInterpolator(1.3f));
 
@@ -160,7 +162,9 @@ public class OverScrollListView extends ListView {
             throw new IllegalArgumentException("Pull-to-load-more footer view must implement PullToLoadMoreCallback");
         }
 
-        mFooterView = (PullToLoadMoreCallback)footerView;
+        mSavedFooterView = (PullToLoadMoreCallback)footerView;
+        ((View)mSavedFooterView).setVisibility(GONE);
+
         addFooterView(footerView);
 
         footerView.setOnClickListener(new OnClickListener() {
@@ -173,25 +177,6 @@ public class OverScrollListView extends ListView {
                     if (mOnLoadMoreListener != null) {
                         mOnLoadMoreListener.onLoadMore();
                     }
-                }
-            }
-        });
-    }
-
-    @Override
-    public void addFooterView(final View footerView, Object data, boolean isSelectable) {
-        super.addFooterView(footerView, data, isSelectable);
-
-        footerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // after the first "laying-out", we get the original height of footer view
-                mFooterViewHeight = footerView.getHeight();
-
-                if (Build.VERSION.SDK_INT >= 16) {
-                    footerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                } else {
-                    footerView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
                 }
             }
         });
@@ -222,17 +207,12 @@ public class OverScrollListView extends ListView {
         }
     }
 
-    public void finishLoadingMore(boolean noMoreToLoad) {
+    public void finishLoadingMore() {
         if (mIsLoadingMore) {
             mIsLoadingMore = false;
 
             if (mFooterView != null) {
-                mFooterView.onEndLoadingMore(noMoreToLoad);
-
-                if (noMoreToLoad) {
-                    mSavedFooterView = mFooterView;
-                    mFooterView = null;
-                }
+                mFooterView.onEndLoadingMore();
             }
         }
     }
@@ -245,6 +225,23 @@ public class OverScrollListView extends ListView {
         if (mFooterView != null) {
             mFooterView.onReset();
         }
+    }
+
+    public void enableLoadMore(boolean enable) {
+        if (enable) {
+            if (mSavedFooterView != null) {
+                mFooterView = mSavedFooterView;
+                ((View)mFooterView).setVisibility(VISIBLE);
+            }
+        } else if (mFooterView != null) {
+            ((View)mFooterView).setVisibility(GONE);
+            mSavedFooterView = mFooterView;
+            mFooterView = null;
+        }
+    }
+
+    public boolean isLoadingMoreEnabled() {
+        return mFooterView != null;
     }
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
@@ -435,7 +432,7 @@ public class OverScrollListView extends ListView {
         if (scrollY != 0) {
 
             if (mFooterView != null && !mIsLoadingMore) {
-                if (scrollY >= mFooterViewHeight) {
+                if (scrollY >= mLoadingMorePullDistanceThreshold) {
                     mIsLoadingMore = true;
                     mFooterView.onStartLoadingMore();
 
@@ -575,13 +572,13 @@ public class OverScrollListView extends ListView {
             int curTotalScrollY = getCurrentHeaderViewHeight() + (-y);
             mOrigHeaderView.onPull(curTotalScrollY);
         } else if (mFooterView != null && !mIsLoadingMore) {
-            int halfFooterViewHeight = mFooterViewHeight / 2;
-            if (y > halfFooterViewHeight) {
-                if (oldScrollY <= halfFooterViewHeight) {
+            int halfPullDistanceThreshold = mLoadingMorePullDistanceThreshold / 2;
+            if (y > halfPullDistanceThreshold) {
+                if (oldScrollY <= halfPullDistanceThreshold) {
                     mFooterView.onStartPulling();
-                } else if (oldScrollY < mFooterViewHeight && y >= mFooterViewHeight) {
+                } else if (oldScrollY < mLoadingMorePullDistanceThreshold && y >= mLoadingMorePullDistanceThreshold) {
                     mFooterView.onReachAboveRefreshThreshold();
-                } else if (oldScrollY >= mFooterViewHeight && y < mFooterViewHeight) {
+                } else if (oldScrollY >= mLoadingMorePullDistanceThreshold && y < mLoadingMorePullDistanceThreshold) {
                     mFooterView.onReachBelowRefreshThreshold();
                 }
             } else {
@@ -660,7 +657,7 @@ public class OverScrollListView extends ListView {
         void onReachBelowRefreshThreshold();
 
         void onStartLoadingMore();
-        void onEndLoadingMore(boolean noMoreToLoad);
+        void onEndLoadingMore();
 
         void onCancelPulling();
     }
