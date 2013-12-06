@@ -27,7 +27,7 @@ import android.widget.*;
  * Of course, you can implement PullToRefreshCallback and write your own
  * PullToRefreshHeaderView, as long as you follow some requirements for
  * the layout of the header view, take the default PullToRefreshHeaderView
- * as a referenece.
+ * as a reference.
  *
  * NOTE: If you do not want the pull-to-refresh feature, you can still use
  *       OverScrollListView, in that case, OverScrollListView only offers
@@ -217,7 +217,7 @@ public class OverScrollListView extends ListView {
             mScroller.forceFinished(true);
 
             // hide the header view, with a smooth bouncing effect
-            springback(-mHeaderViewHeight);
+            springBack(-mHeaderViewHeight);
 //            setSelection(0);
         }
     }
@@ -325,7 +325,7 @@ public class OverScrollListView extends ListView {
                 // Or if it is not in "refreshing" state while height of the header view
                 // is greater than 0, we must set it to 0 with a smooth bounce effect
                 if (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0)) {
-                    springback();
+                    springBack();
 
                     // it is safe to digest the touch events here
                     return true;
@@ -412,7 +412,7 @@ public class OverScrollListView extends ListView {
         return true;
     }
 
-    private void springback() {
+    private void springBack() {
         mScroller.forceFinished(true);
 
         int scrollY = getScrollY();
@@ -447,11 +447,11 @@ public class OverScrollListView extends ListView {
                 }
             }
 
-            springback(scrollY);
+            springBack(scrollY);
         }
     }
 
-    private void springback(int scrollY) {
+    private void springBack(int scrollY) {
         mScroller.startScroll(0, scrollY, 0, -scrollY, DEFAULT_MAX_OVER_SCROLL_DURATION);
         postInvalidate();
     }
@@ -482,7 +482,7 @@ public class OverScrollListView extends ListView {
             }
             postInvalidate();
         } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
-            springback();
+            springBack();
         }
 
         super.computeScroll();
