@@ -13,10 +13,13 @@ For pull-to-refresh, it uses a header view which implements the `PullToRefreshCa
 
 **NOTE**: If you do not want the pull-to-refresh feature, you can still use **OverScrollListView**, in that case, **OverScrollListView** only offers you the bounce effect, and that is why it has the name. Just remember not to call `setPullToRefreshHeaderView()`.
 
-Version 1.0.3
+Release Notes
 =============
-
-Added support for "pull to load more" with a footer view.
+* v1.0.4 - Disabled by default the "pull to load more" feature, which must be manually enabled or disabled. Fixed a few bugs.
+* v1.0.3 - Added support for "pull to load more" with a footer view.
+* v1.0.2 - Rewrite the code for handling over-scroll, and some bugfixes.
+* v1.0.1 - Some bugfixes.
+* v1.0.0 - Implemented "pull to refresh".
 
 Under MIT license
 =================
