@@ -35,7 +35,7 @@ import android.widget.*;
  *       not to call setPullToRefreshHeaderView()
  */
 public class OverScrollListView extends ListView {
-    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 300;
+    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 280;
 
     // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
     private Scroller mScroller;
@@ -246,7 +246,7 @@ public class OverScrollListView extends ListView {
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
         if (!isTouchEvent && mScroller.isFinished()) {
-            mVelocityTracker.computeCurrentVelocity((int)(15 * mScreenDensity), mMaximumVelocity);
+            mVelocityTracker.computeCurrentVelocity((int)(22 * mScreenDensity), mMaximumVelocity);
             int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
             if ((Math.abs(yVelocity) > mMinimumVelocity)) {
