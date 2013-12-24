@@ -35,7 +35,7 @@ import android.widget.*;
  *       not to call setPullToRefreshHeaderView()
  */
 public class OverScrollListView extends ListView {
-    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 280;
+    private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 350;
 
     // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
     private Scroller mScroller;
@@ -126,7 +126,7 @@ public class OverScrollListView extends ListView {
             mHeaderView = ((ViewGroup) v).getChildAt(0);    // pay attention to this
             if (mHeaderView == null ||
                     (!(mHeaderView instanceof LinearLayout) &&
-                    !(mHeaderView instanceof RelativeLayout))) {
+                            !(mHeaderView instanceof RelativeLayout))) {
                 throw new IllegalArgumentException("Pull-to-refresh header view must have " +
                         "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
             }
@@ -202,7 +202,7 @@ public class OverScrollListView extends ListView {
             mScroller.forceFinished(true);
 
             // hide the header view, with a smooth bouncing effect
-            springBack(-mHeaderViewHeight);
+            springBack(-mHeaderViewHeight + getScrollY());
 //            setSelection(0);
         }
     }
@@ -246,7 +246,7 @@ public class OverScrollListView extends ListView {
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
         if (!isTouchEvent && mScroller.isFinished()) {
-            mVelocityTracker.computeCurrentVelocity((int)(22 * mScreenDensity), mMaximumVelocity);
+            mVelocityTracker.computeCurrentVelocity((int)(16 * mScreenDensity), mMaximumVelocity);
             int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
             if ((Math.abs(yVelocity) > mMinimumVelocity)) {
@@ -321,7 +321,7 @@ public class OverScrollListView extends ListView {
                 // 'getScrollY != 0' means thatcontent of the ListView is off screen.
                 // Or if it is not in "refreshing" state while height of the header view
                 // is greater than 0, we must set it to 0 with a smooth bounce effect
-                if (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0)) {
+                if ((getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0))) {
                     springBack();
 
                     // it is safe to digest the touch events here
@@ -410,15 +410,12 @@ public class OverScrollListView extends ListView {
     }
 
     private void springBack() {
-        mScroller.forceFinished(true);
-
         int scrollY = getScrollY();
 
         int curHeaderViewHeight = getCurrentHeaderViewHeight();
         if (curHeaderViewHeight == mHeaderViewHeight) {
             if (!mIsRefreshing && mOrigHeaderView != null) {
                 mIsRefreshing = true;
-
                 mOrigHeaderView.onStartRefreshing();
 
                 if (mOnRefreshListener != null) {
@@ -430,7 +427,6 @@ public class OverScrollListView extends ListView {
         }
 
         if (scrollY != 0) {
-
             if (mFooterView != null && !mIsLoadingMore) {
                 if (scrollY >= mLoadingMorePullDistanceThreshold) {
                     mIsLoadingMore = true;
@@ -444,7 +440,9 @@ public class OverScrollListView extends ListView {
                 }
             }
 
-            springBack(scrollY);
+            if (!mCancellingRefreshing) {
+                springBack(scrollY);
+            }
         }
     }
 
