@@ -1,10 +1,8 @@
 package net.neevek.android.widget;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.LinearLayout;
@@ -13,11 +11,10 @@ import android.widget.TextView;
 import net.neevek.android.R;
 
 /**
- * @author neevek <i at neevek.net>
- *
- * The default implementation of a pull-to-refresh header view for OverScrollListView.
- * this can be taken as a reference.
- *
+ * Created with IntelliJ IDEA.
+ * User: neevek
+ * Date: 11/17/13
+ * Time: 8:25 PM
  */
 public class PullToRefreshHeaderView extends LinearLayout implements OverScrollListView.PullToRefreshCallback {
     private final static int ROTATE_ANIMATION_DURATION = 300;
@@ -39,27 +36,7 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         init();
     }
 
-    public PullToRefreshHeaderView(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
-        init();
-    }
-
     public void init() {
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                mArrowView = findViewById(R.id.iv_down_arrow);
-                mTvRefresh = (TextView)findViewById(R.id.tv_refresh);
-                mProgressBar = (ProgressBar)findViewById(R.id.pb_refreshing);
-
-                if (Build.VERSION.SDK_INT >= 16) {
-                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                } else {
-                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                }
-            }
-        });
-
         mAnimRotateUp = new RotateAnimation(0, -180f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         mAnimRotateUp.setDuration(ROTATE_ANIMATION_DURATION);
         mAnimRotateUp.setFillAfter(true);
@@ -67,6 +44,17 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         mAnimRotateDown = new RotateAnimation(-180f, 0, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         mAnimRotateDown.setDuration(ROTATE_ANIMATION_DURATION);
         mAnimRotateDown.setFillAfter(true);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+
+        if (mArrowView == null) {
+            mArrowView = findViewById(R.id.iv_down_arrow);
+            mTvRefresh = (TextView)findViewById(R.id.tv_refresh);
+            mProgressBar = (ProgressBar)findViewById(R.id.pb_refreshing);
+        }
     }
 
     /**

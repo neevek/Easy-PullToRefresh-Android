@@ -136,25 +136,28 @@ public class OverScrollListView extends ListView {
         }
 
         super.addHeaderView(v, data, isSelectable);
+    }
 
-        mHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                // after the first "laying-out", we get the original height of header view
-                mHeaderViewHeight = mHeaderView.getHeight();
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
 
-                if (Build.VERSION.SDK_INT >= 16) {
-                    mHeaderView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                } else {
-                    mHeaderView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+        if (mHeaderViewHeight == 0 && mHeaderView != null) {
+            // after the first "laying-out", we get the original height of header view
+            mHeaderViewHeight = mHeaderView.getHeight();
+            mHeaderViewLayoutParams = mHeaderView.getLayoutParams();
+
+            // set the header height to 0 in advance. "post(Runnable)" below is queued up
+            // to run in the main thread, which may delay for some time
+            mHeaderViewLayoutParams.height = 0;
+            // hide the header view
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    setHeaderViewHeightInternal(0);
                 }
-
-                mHeaderViewLayoutParams = mHeaderView.getLayoutParams();
-
-                // hide the header view
-                setHeaderViewHeight(0);
-            }
-        });
+            });
+        }
     }
 
     public void setPullToLoadMoreFooterView(View footerView) {
@@ -245,7 +248,7 @@ public class OverScrollListView extends ListView {
     }
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
-        if (!isTouchEvent && mScroller.isFinished()) {
+        if (!isTouchEvent && mScroller.isFinished() && mVelocityTracker != null) {
             mVelocityTracker.computeCurrentVelocity((int)(16 * mScreenDensity), mMaximumVelocity);
             int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
@@ -318,7 +321,7 @@ public class OverScrollListView extends ListView {
                 mIsTouching = false;
                 mIsBeingTouchScrolled = false;
 
-                // 'getScrollY != 0' means thatcontent of the ListView is off screen.
+                // 'getScrollY != 0' means that content of the ListView is off screen.
                 // Or if it is not in "refreshing" state while height of the header view
                 // is greater than 0, we must set it to 0 with a smooth bounce effect
                 if ((getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() > 0))) {
@@ -413,7 +416,7 @@ public class OverScrollListView extends ListView {
         int scrollY = getScrollY();
 
         int curHeaderViewHeight = getCurrentHeaderViewHeight();
-        if (curHeaderViewHeight == mHeaderViewHeight) {
+        if (curHeaderViewHeight == mHeaderViewHeight && mHeaderViewHeight > 0) {
             if (!mIsRefreshing && mOrigHeaderView != null) {
                 mIsRefreshing = true;
                 mOrigHeaderView.onStartRefreshing();
@@ -442,6 +445,21 @@ public class OverScrollListView extends ListView {
 
             if (!mCancellingRefreshing) {
                 springBack(scrollY);
+            }
+        }
+    }
+
+    public void startLoadingMoreManually() {
+        if (!isLoadingMoreEnabled()) {
+            enableLoadMore(true);
+        }
+
+        if (mFooterView != null) {
+            mIsLoadingMore = true;
+            mFooterView.onStartLoadingMore();
+
+            if (mOnLoadMoreListener != null) {
+                mOnLoadMoreListener.onLoadMore();
             }
         }
     }
@@ -587,28 +605,32 @@ public class OverScrollListView extends ListView {
 
     private void setHeaderViewHeight(int height) {
         if (mHeaderViewLayoutParams != null && (mHeaderViewLayoutParams.height != 0 || height != 0)) {
-            int oldHeight = mHeaderViewLayoutParams.height;
+            setHeaderViewHeightInternal(height);
+        }
+    }
 
-            mHeaderViewLayoutParams.height = height;
+    private void setHeaderViewHeightInternal(int height) {
+        int oldHeight = mHeaderViewLayoutParams.height;
 
-            // if mHeaderView is visiable(I mean within the confines of the visible screen), we should
-            // request the mHeaderView to re-layout itself, if mHeaderView is not visibble, we should
-            // redraw the ListView itself, which ensures correct scroll position of the ListView.
-            if (mHeaderView.isShown()) {
-                mHeaderView.requestLayout();
-            } else {
-                invalidate();
-            }
+        mHeaderViewLayoutParams.height = height;
 
-            if (mOrigHeaderView != null && !mIsRefreshing && !mCancellingRefreshing) {
-                mOrigHeaderView.onPull(height);
+        // if mHeaderView is visible(I mean within the confines of the visible screen), we should
+        // request the mHeaderView to re-layout itself, if mHeaderView is not visibble, we should
+        // redraw the ListView itself, which ensures correct scroll position of the ListView.
+        if (mHeaderView.isShown()) {
+            mHeaderView.requestLayout();
+        } else {
+            invalidate();
+        }
 
-                if (oldHeight < mHeaderViewHeight && height == mHeaderViewHeight) {
-                    mOrigHeaderView.onReachAboveHeaderViewHeight();
-                } else if (oldHeight == mHeaderViewHeight && height < mHeaderViewHeight) {
-                    if (height != 0) {  // initial setup
-                        mOrigHeaderView.onReachBelowHeaderViewHeight();
-                    }
+        if (mOrigHeaderView != null && !mIsRefreshing && !mCancellingRefreshing) {
+            mOrigHeaderView.onPull(height);
+
+            if (oldHeight < mHeaderViewHeight && height == mHeaderViewHeight) {
+                mOrigHeaderView.onReachAboveHeaderViewHeight();
+            } else if (oldHeight == mHeaderViewHeight && height < mHeaderViewHeight) {
+                if (height != 0) {  // initial setup
+                    mOrigHeaderView.onReachBelowHeaderViewHeight();
                 }
             }
         }
