@@ -333,8 +333,6 @@ public class OverScrollListView extends ListView {
                 break;
         }
 
-        // let the original ListView handle the touch events
-        boolean result = super.onTouchEvent(ev);
         int curScrollY = getScrollY();
 
         // if not in 'refreshing' state or scrollY is less than zero, and height of
@@ -343,13 +341,16 @@ public class OverScrollListView extends ListView {
         // calling setSelection(0), we will decrease height of the header view and scroll
         // the ListView itself at the same time, which will cause scrolling too fast
         // when decreasing height of the header view)
-        if ((!mIsRefreshing  && getCurrentHeaderViewHeight() > 0 ) || curScrollY < 0) {
-            setSelection(0);
+        if ((!mIsRefreshing  && getCurrentHeaderViewHeight() > 0) || curScrollY < 0) {
+//            setSelection(0);
+            return true;
         } else if (curScrollY > 0) {
-            setSelection(getCount() - 1);
+//            setSelection(getCount() - 1);
+            return true;
         }
 
-        return result;
+        // let the original ListView handle the touch events
+        return super.onTouchEvent(ev);
     }
 
     private void handleTouchScroll(int deltaY) {
