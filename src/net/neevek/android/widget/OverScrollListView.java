@@ -67,6 +67,7 @@ public class OverScrollListView extends ListView {
     private boolean mIsRefreshing;
     // is finishRefreshing() has just been called?
     private boolean mCancellingRefreshing;
+    private boolean mHideHeaderViewWithoutAnimation;
 
     private PullToLoadMoreCallback mSavedFooterView;
     private PullToLoadMoreCallback mFooterView;
@@ -198,15 +199,23 @@ public class OverScrollListView extends ListView {
             mCancellingRefreshing = true;
             mIsRefreshing = false;
 
-            if (mOrigHeaderView != null) {
-                mOrigHeaderView.onEndRefreshing();
-            }
-
             mScroller.forceFinished(true);
 
             // hide the header view, with a smooth bouncing effect
             springBack(-mHeaderViewHeight + getScrollY());
 //            setSelection(0);
+        }
+    }
+
+    public void finishRefreshingAndHideHeaderViewWithoutAnimation() {
+        if (mIsRefreshing) {
+            mCancellingRefreshing = true;
+            mHideHeaderViewWithoutAnimation = true;
+            mIsRefreshing = false;
+
+            mScroller.forceFinished(true);
+            // hide the header view, with a smooth bouncing effect
+            springBack(getScrollY());
         }
     }
 
@@ -330,6 +339,7 @@ public class OverScrollListView extends ListView {
                     // it is safe to digest the touch events here
                     return true;
                 }
+
                 break;
         }
 
@@ -477,24 +487,39 @@ public class OverScrollListView extends ListView {
 
             // if not in "refreshing" state, we must decrease height of the
             // header view to 0
-            if (!mIsRefreshing && getCurrentHeaderViewHeight() > 0) {
+            if (!mHideHeaderViewWithoutAnimation && !mIsRefreshing && getCurrentHeaderViewHeight() > 0) {
                 scrollY -= getCurrentHeaderViewHeight();
             }
 
             final int deltaY = mScroller.getCurrY() - scrollY;
 
-            if (deltaY < 0) {
-                scrollDown(-deltaY);
-            } else {
-                scrollUp(-deltaY);
-            }
+            if (deltaY != 0) {
+                if (deltaY < 0) {
+                    scrollDown(-deltaY);
 
-            if (mCancellingRefreshing && mOnRefreshListener != null && deltaY == 0) {
+                } else {
+                    scrollUp(-deltaY);
+                }
+
+                postInvalidate();
+            } else if (mCancellingRefreshing) {
+                if (mHideHeaderViewWithoutAnimation) {
+                    mHideHeaderViewWithoutAnimation = false;
+
+                    mHeaderViewLayoutParams.height = 0;
+                    requestLayout();
+                }
+
                 mCancellingRefreshing = false;
+                if (mOnRefreshListener != null) {
+                    mOnRefreshListener.onRefreshAnimationEnd();
+                }
 
-                mOnRefreshListener.onRefreshAnimationEnd();
+                if (mOrigHeaderView != null) {
+                    mOrigHeaderView.onEndRefreshing();
+                }
             }
-            postInvalidate();
+
         } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
             springBack();
         }
@@ -625,6 +650,9 @@ public class OverScrollListView extends ListView {
         }
 
         if (mOrigHeaderView != null && !mIsRefreshing && !mCancellingRefreshing) {
+            if (oldHeight == 0 && height > 0) {
+                mOrigHeaderView.onStartPulling();
+            }
             mOrigHeaderView.onPull(height);
 
             if (oldHeight < mHeaderViewHeight && height == mHeaderViewHeight) {
@@ -656,6 +684,8 @@ public class OverScrollListView extends ListView {
      * The interface to be implemented by header view to be used with OverScrollListView
      */
     public interface PullToRefreshCallback {
+        void onStartPulling();
+
         // scrollY = how far have we pulled?
         void onPull(int scrollY);
 

@@ -57,6 +57,14 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         }
     }
 
+    @Override
+    public void onStartPulling() {
+        mProgressBar.setVisibility(GONE);
+        mArrowView.setVisibility(VISIBLE);
+        mTvRefresh.setVisibility(VISIBLE);
+        mTvRefresh.setText("Pull To Refresh");
+    }
+
     /**
      * @param scrollY [screenHeight, 0]
      */
@@ -86,8 +94,7 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
 
     @Override
     public void onEndRefreshing() {
-        mArrowView.setVisibility(VISIBLE);
         mProgressBar.setVisibility(GONE);
-        mTvRefresh.setText("Pull To Refresh");
+        mTvRefresh.setVisibility(GONE);
     }
 }
