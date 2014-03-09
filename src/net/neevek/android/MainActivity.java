@@ -3,7 +3,6 @@ package net.neevek.android;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
@@ -31,9 +30,14 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
         View footer = getLayoutInflater().inflate(R.layout.footer, null);
 
         mListView.setPullToRefreshHeaderView(header);
-//        mListView.addHeaderView(header);
+        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
+        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
+        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
+
+        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
+        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
+        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
         mListView.setPullToLoadMoreFooterView(footer);
-//        mListView.addFooterView(footer);
 
         mListView.setOnRefreshListener(this);
         mListView.setOnLoadMoreListener(this);

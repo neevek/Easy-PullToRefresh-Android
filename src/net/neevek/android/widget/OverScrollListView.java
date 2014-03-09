@@ -118,16 +118,10 @@ public class OverScrollListView extends ListView {
         }
 
         mOrigHeaderView = (PullToRefreshCallback)headerView;
-        addHeaderView(headerView);
-    }
 
-    @Override
-    public void addHeaderView(View v, Object data, boolean isSelectable) {
-        if (v instanceof ViewGroup) {
-            mHeaderView = ((ViewGroup) v).getChildAt(0);    // pay attention to this
-            if (mHeaderView == null ||
-                    (!(mHeaderView instanceof LinearLayout) &&
-                            !(mHeaderView instanceof RelativeLayout))) {
+        if (headerView instanceof ViewGroup) {
+            mHeaderView = ((ViewGroup) headerView).getChildAt(0);    // pay attention to this
+            if (mHeaderView == null || (!(mHeaderView instanceof LinearLayout) && !(mHeaderView instanceof RelativeLayout))) {
                 throw new IllegalArgumentException("Pull-to-refresh header view must have " +
                         "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
             }
@@ -135,8 +129,7 @@ public class OverScrollListView extends ListView {
             throw new IllegalArgumentException("Pull-to-refresh header view must have " +
                     "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
         }
-
-        super.addHeaderView(v, data, isSelectable);
+        addHeaderView(headerView);
     }
 
     @Override
