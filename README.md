@@ -15,6 +15,8 @@ For pull-to-refresh, it uses a header view which implements the `PullToRefreshCa
 
 Release Notes
 =============
+* v1.1.0 - Added OverScrollListView.finishRefreshingAndHideHeaderViewWithoutAnimation(), which produces more desired effect when used in situations that needs to use "pull down & release" to load more, such as in a conversation ListView where we pull down & release to load the conversation history.
+* v1.0.5 - Bugfixes
 * v1.0.4 - Disabled by default the "pull to load more" feature, which must be manually enabled or disabled. Fixed a few bugs.
 * v1.0.3 - Added support for "pull to load more" with a footer view.
 * v1.0.2 - Rewrite the code for handling over-scroll, and some bugfixes.
