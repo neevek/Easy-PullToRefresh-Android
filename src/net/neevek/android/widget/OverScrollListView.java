@@ -493,8 +493,6 @@ public class OverScrollListView extends ListView {
                 } else {
                     scrollUp(-deltaY);
                 }
-
-                postInvalidate();
             } else if (mCancellingRefreshing) {
                 if (mHideHeaderViewWithoutAnimation) {
                     mHideHeaderViewWithoutAnimation = false;
@@ -512,6 +510,8 @@ public class OverScrollListView extends ListView {
                     mOrigHeaderView.onEndRefreshing();
                 }
             }
+
+            postInvalidate();
 
         } else if (!mIsTouching && (getScrollY() != 0 || (!mIsRefreshing && getCurrentHeaderViewHeight() != 0))) {
             springBack();
