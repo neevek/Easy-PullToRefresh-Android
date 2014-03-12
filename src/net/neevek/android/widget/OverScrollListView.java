@@ -137,9 +137,9 @@ public class OverScrollListView extends ListView {
         super.onLayout(changed, l, t, r, b);
 
         if (mHeaderViewHeight == 0 && mHeaderView != null) {
-            // after the first "laying-out", we get the original height of header view
-            mHeaderViewHeight = mHeaderView.getHeight();
             mHeaderViewLayoutParams = mHeaderView.getLayoutParams();
+            // after the first "laying-out", we get the original height of header view
+            mHeaderViewHeight = mHeaderViewLayoutParams.height;
 
             // set the header height to 0 in advance. "post(Runnable)" below is queued up
             // to run in the main thread, which may delay for some time
