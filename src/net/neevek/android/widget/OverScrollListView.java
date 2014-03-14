@@ -493,7 +493,7 @@ public class OverScrollListView extends ListView {
                 } else {
                     scrollUp(-deltaY);
                 }
-            } else if (mCancellingRefreshing) {
+            } else if (mCancellingRefreshing && scrollY == 0) {
                 if (mHideHeaderViewWithoutAnimation) {
                     mHideHeaderViewWithoutAnimation = false;
 

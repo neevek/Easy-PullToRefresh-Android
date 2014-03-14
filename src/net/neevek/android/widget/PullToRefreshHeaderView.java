@@ -74,12 +74,14 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
 
     @Override
     public void onReachAboveHeaderViewHeight() {
+        mProgressBar.setVisibility(GONE);
         mTvRefresh.setText("Release To Refresh");
         mArrowView.startAnimation(mAnimRotateUp);
     }
 
     @Override
     public void onReachBelowHeaderViewHeight() {
+        mProgressBar.setVisibility(GONE);
         mTvRefresh.setText("Pull To Refresh");
         mArrowView.startAnimation(mAnimRotateDown);
     }
