@@ -30,13 +30,9 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
         View footer = getLayoutInflater().inflate(R.layout.footer, null);
 
         mListView.setPullToRefreshHeaderView(header);
-        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
-        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
-        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.footer, null));
+//        mListView.addHeaderView(getLayoutInflater().inflate(R.layout.header, null));
 
-        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
-        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
-        mListView.addFooterView(getLayoutInflater().inflate(R.layout.header, null));
+//        mListView.addFooterView(getLayoutInflater().inflate(R.layout.footer, null));
         mListView.setPullToLoadMoreFooterView(footer);
 
         mListView.setOnRefreshListener(this);
@@ -47,7 +43,7 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
 
         mListView.setAdapter(mAdapter);
 
-        initData();
+        mListView.startRefreshManually();
     }
 
     private void initData() {

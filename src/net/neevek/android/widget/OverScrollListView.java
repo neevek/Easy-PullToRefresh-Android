@@ -78,6 +78,8 @@ public class OverScrollListView extends ListView {
 
     private float mScreenDensity;
 
+    private boolean mMarkAutoRefresh;
+
     public OverScrollListView(Context context) {
         super(context);
         init(context);
@@ -127,7 +129,7 @@ public class OverScrollListView extends ListView {
             }
         } else {
             throw new IllegalArgumentException("Pull-to-refresh header view must have " +
-                    "the following layout hierachy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
+                    "the following layout hierarchy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
         }
         addHeaderView(headerView);
     }
@@ -141,16 +143,21 @@ public class OverScrollListView extends ListView {
             // after the first "laying-out", we get the original height of header view
             mHeaderViewHeight = mHeaderViewLayoutParams.height;
 
-            // set the header height to 0 in advance. "post(Runnable)" below is queued up
-            // to run in the main thread, which may delay for some time
-            mHeaderViewLayoutParams.height = 0;
-            // hide the header view
-            post(new Runnable() {
-                @Override
-                public void run() {
-                    setHeaderViewHeightInternal(0);
-                }
-            });
+            if (mMarkAutoRefresh) {
+                mMarkAutoRefresh = false;
+                startRefreshManually();
+            } else {
+                // set the header height to 0 in advance. "post(Runnable)" below is queued up
+                // to run in the main thread, which may delay for some time
+                mHeaderViewLayoutParams.height = 0;
+                // hide the header view
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        setHeaderViewHeightInternal(0);
+                    }
+                });
+            }
         }
     }
 
@@ -422,12 +429,7 @@ public class OverScrollListView extends ListView {
         int curHeaderViewHeight = getCurrentHeaderViewHeight();
         if (curHeaderViewHeight == mHeaderViewHeight && mHeaderViewHeight > 0) {
             if (!mIsRefreshing && mOrigHeaderView != null) {
-                mIsRefreshing = true;
-                mOrigHeaderView.onStartRefreshing();
-
-                if (mOnRefreshListener != null) {
-                    mOnRefreshListener.onRefresh();
-                }
+                triggerRefresh();
             }
         } else {
             scrollY -= curHeaderViewHeight;
@@ -450,6 +452,26 @@ public class OverScrollListView extends ListView {
             if (!mCancellingRefreshing) {
                 springBack(scrollY);
             }
+        }
+    }
+
+    private void triggerRefresh() {
+        mIsRefreshing = true;
+        mOrigHeaderView.onStartRefreshing();
+
+        if (mOnRefreshListener != null) {
+            mOnRefreshListener.onRefresh();
+        }
+    }
+
+    public void startRefreshManually() {
+        if (!mIsRefreshing && mOrigHeaderView != null && mHeaderViewHeight > 0) {
+            mMarkAutoRefresh = false;
+            setHeaderViewHeight(mHeaderViewHeight);
+
+            triggerRefresh();
+        } else {
+            mMarkAutoRefresh = true;
         }
     }
 
@@ -634,7 +656,7 @@ public class OverScrollListView extends ListView {
         mHeaderViewLayoutParams.height = height;
 
         // if mHeaderView is visible(I mean within the confines of the visible screen), we should
-        // request the mHeaderView to re-layout itself, if mHeaderView is not visibble, we should
+        // request the mHeaderView to re-layout itself, if mHeaderView is not visible, we should
         // redraw the ListView itself, which ensures correct scroll position of the ListView.
         if (mHeaderView.isShown()) {
             mHeaderView.requestLayout();
