@@ -145,7 +145,12 @@ public class OverScrollListView extends ListView {
 
             if (mMarkAutoRefresh) {
                 mMarkAutoRefresh = false;
-                startRefreshManually();
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        startRefreshManually();
+                    }
+                });
             } else {
                 // set the header height to 0 in advance. "post(Runnable)" below is queued up
                 // to run in the main thread, which may delay for some time
