@@ -26,6 +26,10 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
     private Animation mAnimRotateUp;
     private Animation mAnimRotateDown;
 
+    private String mPullText = "Pull to refresh";
+    private String mReleaseText = "Release to refresh";
+    private String mRefreshText = "Refreshing...";
+
     public PullToRefreshHeaderView(Context context) {
         super(context);
         init();
@@ -40,7 +44,6 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         mAnimRotateUp = new RotateAnimation(0, -180f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         mAnimRotateUp.setDuration(ROTATE_ANIMATION_DURATION);
         mAnimRotateUp.setFillAfter(true);
-
         mAnimRotateDown = new RotateAnimation(-180f, 0, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         mAnimRotateDown.setDuration(ROTATE_ANIMATION_DURATION);
         mAnimRotateDown.setFillAfter(true);
@@ -62,7 +65,7 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         mProgressBar.setVisibility(GONE);
         mArrowView.setVisibility(VISIBLE);
         mTvRefresh.setVisibility(VISIBLE);
-        mTvRefresh.setText("Pull To Refresh");
+        mTvRefresh.setText(mPullText);
     }
 
     /**
@@ -75,14 +78,14 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
     @Override
     public void onReachAboveHeaderViewHeight() {
         mProgressBar.setVisibility(GONE);
-        mTvRefresh.setText("Release To Refresh");
+        mTvRefresh.setText(mReleaseText);
         mArrowView.startAnimation(mAnimRotateUp);
     }
 
     @Override
     public void onReachBelowHeaderViewHeight() {
         mProgressBar.setVisibility(GONE);
-        mTvRefresh.setText("Pull To Refresh");
+        mTvRefresh.setText(mPullText);
         mArrowView.startAnimation(mAnimRotateDown);
     }
 
@@ -91,12 +94,24 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         mArrowView.clearAnimation();
         mArrowView.setVisibility(GONE);
         mProgressBar.setVisibility(VISIBLE);
-        mTvRefresh.setText("Loading...");
+        mTvRefresh.setText(mRefreshText);
     }
 
     @Override
     public void onEndRefreshing() {
         mProgressBar.setVisibility(GONE);
         mTvRefresh.setVisibility(GONE);
+    }
+
+    public void setPullText(String pullText) {
+        mPullText = pullText;
+    }
+
+    public void setReleaseText(String releaseText) {
+        mReleaseText = releaseText;
+    }
+
+    public void setRefreshText(String refreshText) {
+        mRefreshText = refreshText;
     }
 }

@@ -43,7 +43,7 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
 
         mListView.setAdapter(mAdapter);
 
-        mListView.startRefreshManually();
+        mListView.startRefreshManually(null);
     }
 
     private void initData() {
@@ -93,7 +93,7 @@ public class MainActivity extends Activity implements OverScrollListView.OnRefre
     }
 
     @Override
-    public void onRefresh() {
+    public void onRefresh(Object bizContextObject) {
         new Thread(){
             @Override
             public void run() {

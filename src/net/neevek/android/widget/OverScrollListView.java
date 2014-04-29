@@ -1,11 +1,15 @@
 package net.neevek.android.widget;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.*;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.*;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.Scroller;
 
 /**
  * @author neevek <i at neevek.net>
@@ -80,6 +84,8 @@ public class OverScrollListView extends ListView {
 
     private boolean mMarkAutoRefresh;
 
+    private Object mBizContextForRefresh;
+
     public OverScrollListView(Context context) {
         super(context);
         init(context);
@@ -115,6 +121,10 @@ public class OverScrollListView extends ListView {
     }
 
     public void setPullToRefreshHeaderView(View headerView) {
+        if (mOrigHeaderView != null) {
+            return;
+        }
+
         if (!(headerView instanceof PullToRefreshCallback)) {
             throw new IllegalArgumentException("Pull-to-refresh header view must implement PullToRefreshCallback");
         }
@@ -148,7 +158,7 @@ public class OverScrollListView extends ListView {
                 post(new Runnable() {
                     @Override
                     public void run() {
-                        startRefreshManually();
+                        startRefreshManually(null);
                     }
                 });
             } else {
@@ -465,12 +475,15 @@ public class OverScrollListView extends ListView {
         mOrigHeaderView.onStartRefreshing();
 
         if (mOnRefreshListener != null) {
-            mOnRefreshListener.onRefresh();
+            mOnRefreshListener.onRefresh(mBizContextForRefresh);
+            mBizContextForRefresh = null;
         }
     }
 
-    public void startRefreshManually() {
+    public void startRefreshManually(Object bizContextForRefresh) {
         if (!mIsRefreshing && mOrigHeaderView != null && mHeaderViewHeight > 0) {
+            mBizContextForRefresh = bizContextForRefresh;
+
             mMarkAutoRefresh = false;
             setHeaderViewHeight(mHeaderViewHeight);
 
@@ -528,14 +541,11 @@ public class OverScrollListView extends ListView {
                     requestLayout();
                 }
 
-                mCancellingRefreshing = false;
-                if (mOnRefreshListener != null) {
-                    mOnRefreshListener.onRefreshAnimationEnd();
-                }
-
                 if (mOrigHeaderView != null) {
                     mOrigHeaderView.onEndRefreshing();
                 }
+
+                notifyRefreshAnimationEnd();
             }
 
             postInvalidate();
@@ -682,6 +692,15 @@ public class OverScrollListView extends ListView {
                     mOrigHeaderView.onReachBelowHeaderViewHeight();
                 }
             }
+        } else if (mCancellingRefreshing && height == 0) {
+            notifyRefreshAnimationEnd();
+        }
+    }
+
+    private void notifyRefreshAnimationEnd() {
+        mCancellingRefreshing = false;
+        if (mOnRefreshListener != null) {
+            mOnRefreshListener.onRefreshAnimationEnd();
         }
     }
 
@@ -692,11 +711,32 @@ public class OverScrollListView extends ListView {
         return 0;
     }
 
+    // see http://stackoverflow.com/a/9173866/668963
+    @Override
+    protected void onDetachedFromWindow() {
+        try {
+            super.onDetachedFromWindow();
+        } catch(IllegalArgumentException iae) {
+            // Workaround for http://code.google.com/p/android/issues/detail?id=22751
+        }
+    }
+
+    // see http://stackoverflow.com/a/8433777/668963
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        try {
+            super.dispatchDraw(canvas);
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+            // ignore this exception
+        }
+    }
+
     /**
      * The listener to be registered through OverScrollListView.setOnRefreshListener()
      */
     public static interface OnRefreshListener {
-        void onRefresh();
+        void onRefresh(Object bizContext);
         void onRefreshAnimationEnd();
     }
 
