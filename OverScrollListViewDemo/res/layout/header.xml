@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<net.neevek.android.widget.PullToRefreshHeaderView
+<net.neevek.android.demo.ptr.PullToRefreshHeaderView
         xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="horizontal"
               android:layout_width="fill_parent"
@@ -54,4 +54,4 @@
                     />
         </RelativeLayout>
     </LinearLayout>
-</net.neevek.android.widget.PullToRefreshHeaderView>
+</net.neevek.android.demo.ptr.PullToRefreshHeaderView>

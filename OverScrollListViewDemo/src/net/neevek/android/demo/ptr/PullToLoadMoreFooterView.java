@@ -1,4 +1,4 @@
-package net.neevek.android.widget;
+package net.neevek.android.demo.ptr;
 
 import android.content.Context;
 import android.os.Build;
@@ -7,14 +7,13 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import net.neevek.android.R;
+import net.neevek.android.lib.ptr.OverScrollListView;
 
 /**
- * @author neevek <i at neevek.net>
+ * @author neevek <i@neevek.net>
  *
  * The default implementation of a pull-to-load-more footer view for OverScrollListView.
- * this can be taken as a reference.
- *
+ * this can be taken as an implementation reference.
  */
 public class PullToLoadMoreFooterView extends FrameLayout implements OverScrollListView.PullToLoadMoreCallback {
     private TextView mTvLoadMore;

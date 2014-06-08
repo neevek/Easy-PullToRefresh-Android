@@ -1,4 +1,4 @@
-package net.neevek.android.widget;
+package net.neevek.android.demo.ptr;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -8,13 +8,13 @@ import android.view.animation.RotateAnimation;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import net.neevek.android.R;
+import net.neevek.android.lib.ptr.OverScrollListView;
 
 /**
- * Created with IntelliJ IDEA.
- * User: neevek
- * Date: 11/17/13
- * Time: 8:25 PM
+ * @author neevek <i@neevek.net>
+ *
+ * The default implementation of a pull-to-load-more header view for OverScrollListView.
+ * this can be taken as an implementation reference.
  */
 public class PullToRefreshHeaderView extends LinearLayout implements OverScrollListView.PullToRefreshCallback {
     private final static int ROTATE_ANIMATION_DURATION = 300;

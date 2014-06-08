@@ -1,4 +1,4 @@
-package net.neevek.android;
+package net.neevek.android.demo.ptr;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -6,7 +6,7 @@ import android.os.SystemClock;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
-import net.neevek.android.widget.OverScrollListView;
+import net.neevek.android.lib.ptr.OverScrollListView;
 
 import java.util.ArrayList;
 import java.util.List;

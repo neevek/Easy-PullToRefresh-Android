@@ -1,4 +1,4 @@
-package net.neevek.android.widget;
+package net.neevek.android.lib.ptr;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -12,7 +12,7 @@ import android.widget.RelativeLayout;
 import android.widget.Scroller;
 
 /**
- * @author neevek <i at neevek.net>
+ * @author neevek <i@neevek.net>
  * @version v1.0.0 finished on Nov. 24, 2013 (a rainy Sunday in GuangZhou)
  * @version v1.0.3 finished at 2:49 a.m. on Dec. 5, 2013
  *
