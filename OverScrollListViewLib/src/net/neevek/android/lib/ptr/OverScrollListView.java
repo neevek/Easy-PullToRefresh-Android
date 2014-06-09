@@ -47,6 +47,8 @@ public class OverScrollListView extends ListView {
     private float mLastY;
     private boolean mIsTouching;
     private boolean mIsBeingTouchScrolled;
+    private int mLoadingMorePullDistanceThreshold;
+    private float mScreenDensity;
 
     // a threshold to tell whether the user is touch-scrolling
     private int mTouchSlop;
@@ -64,9 +66,8 @@ public class OverScrollListView extends ListView {
     // the original height of the header view
     private int mHeaderViewHeight;
 
-    // user of this pull-to-refresh ListView certainly will register a
-    // a listener, which will be called when a "refresh" action should
-    // be initiated.
+    // user of this pull-to-refresh ListView may register a a listener,
+    // which will be called when a "refresh" action should be initiated.
     private OnRefreshListener mOnRefreshListener;
     private boolean mIsRefreshing;
     // is finishRefreshing() has just been called?
@@ -78,12 +79,7 @@ public class OverScrollListView extends ListView {
     private boolean mIsLoadingMore;
     private OnLoadMoreListener mOnLoadMoreListener;
 
-    private int mLoadingMorePullDistanceThreshold;
-
-    private float mScreenDensity;
-
     private boolean mMarkAutoRefresh;
-
     private Object mBizContextForRefresh;
 
     public OverScrollListView(Context context) {
@@ -444,7 +440,7 @@ public class OverScrollListView extends ListView {
         int curHeaderViewHeight = getCurrentHeaderViewHeight();
         if (curHeaderViewHeight == mHeaderViewHeight && mHeaderViewHeight > 0) {
             if (!mIsRefreshing && mOrigHeaderView != null) {
-                triggerRefresh();
+                triggerRefreshing();
             }
         } else {
             scrollY -= curHeaderViewHeight;
@@ -470,7 +466,7 @@ public class OverScrollListView extends ListView {
         }
     }
 
-    private void triggerRefresh() {
+    private void triggerRefreshing() {
         mIsRefreshing = true;
         mOrigHeaderView.onStartRefreshing();
 
@@ -480,14 +476,22 @@ public class OverScrollListView extends ListView {
         }
     }
 
+    /**
+     * @deprecated
+     * use startRefreshingManually() instead
+     */
     public void startRefreshManually(Object bizContextForRefresh) {
+        startRefreshingManually(bizContextForRefresh);
+    }
+
+    public void startRefreshingManually(Object bizContextForRefresh) {
         if (!mIsRefreshing && mOrigHeaderView != null && mHeaderViewHeight > 0) {
             mBizContextForRefresh = bizContextForRefresh;
 
             mMarkAutoRefresh = false;
             setHeaderViewHeight(mHeaderViewHeight);
 
-            triggerRefresh();
+            triggerRefreshing();
         } else {
             mMarkAutoRefresh = true;
         }
@@ -756,10 +760,18 @@ public class OverScrollListView extends ListView {
         void onEndRefreshing();
     }
 
+    /**
+     * The listener to be registered through OverScrollListView.setOnLoadMoreListener()
+     * see the demo project(OverScrollListViewDemo) for a reference implementation
+     */
     public static interface OnLoadMoreListener {
         void onLoadMore();
     }
 
+    /**
+     * The interface to be implemented by footer view to be used with OverScrollListView
+     * see the demo project(OverScrollListViewDemo) for a reference implementation
+     */
     public interface PullToLoadMoreCallback {
         void onReset();
         void onStartPulling();
