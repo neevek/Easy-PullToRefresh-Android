@@ -50,14 +50,10 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
     }
 
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
-
-        if (mArrowView == null) {
-            mArrowView = findViewById(R.id.iv_down_arrow);
-            mTvRefresh = (TextView)findViewById(R.id.tv_refresh);
-            mProgressBar = (ProgressBar)findViewById(R.id.pb_refreshing);
-        }
+    protected void onFinishInflate() {
+        mArrowView = findViewById(R.id.iv_down_arrow);
+        mTvRefresh = (TextView)findViewById(R.id.tv_refresh);
+        mProgressBar = (ProgressBar)findViewById(R.id.pb_refreshing);
     }
 
     @Override

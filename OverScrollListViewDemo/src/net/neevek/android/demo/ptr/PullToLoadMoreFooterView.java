@@ -26,32 +26,19 @@ public class PullToLoadMoreFooterView extends FrameLayout implements OverScrollL
 
     public PullToLoadMoreFooterView(Context context) {
         super(context);
-        init();
     }
 
     public PullToLoadMoreFooterView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
     }
 
     public PullToLoadMoreFooterView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        init();
     }
 
-    private void init() {
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                ensuresLoadMoreViewsAvailability();
-
-                if (Build.VERSION.SDK_INT >= 16) {
-                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                } else {
-                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                }
-            }
-        });
+    @Override
+    protected void onFinishInflate() {
+        ensuresLoadMoreViewsAvailability();
     }
 
     private void ensuresLoadMoreViewsAvailability() {
