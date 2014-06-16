@@ -370,8 +370,14 @@ public class OverScrollListView extends ListView {
             return true;
         }
 
-        // let the original ListView handle the touch events
-        return super.onTouchEvent(ev);
+        try {
+            // let the original ListView handle the touch events
+            return super.onTouchEvent(ev);
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     private void handleTouchScroll(int deltaY) {
