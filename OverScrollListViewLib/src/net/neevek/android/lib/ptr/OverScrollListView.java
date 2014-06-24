@@ -205,6 +205,10 @@ public class OverScrollListView extends ListView {
         mOnLoadMoreListener = listener;
     }
 
+    public boolean isRefreshing() {
+        return mIsRefreshing;
+    }
+
     public void finishRefreshing() {
         if (mIsRefreshing) {
             mCancellingRefreshing = true;
@@ -228,6 +232,10 @@ public class OverScrollListView extends ListView {
             // hide the header view, with a smooth bouncing effect
             springBack(getScrollY());
         }
+    }
+
+    public boolean isLoadingMore() {
+        return mIsLoadingMore;
     }
 
     public void finishLoadingMore() {
