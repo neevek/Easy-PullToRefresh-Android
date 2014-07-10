@@ -501,13 +501,15 @@ public class OverScrollListView extends ListView {
     public void startRefreshingManually(Object bizContextForRefresh) {
         mBizContextForRefresh = bizContextForRefresh;
 
-        if (!mIsRefreshing && mOrigHeaderView != null && mHeaderViewHeight > 0) {
-            mMarkAutoRefresh = false;
-            setHeaderViewHeight(mHeaderViewHeight);
+        if (!mIsRefreshing) {
+            if (mOrigHeaderView != null && mHeaderViewHeight > 0) {
+                mMarkAutoRefresh = false;
+                setHeaderViewHeight(mHeaderViewHeight);
 
-            triggerRefreshing();
-        } else {
-            mMarkAutoRefresh = true;
+                triggerRefreshing();
+            } else {
+                mMarkAutoRefresh = true;
+            }
         }
     }
 
