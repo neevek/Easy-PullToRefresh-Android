@@ -82,6 +82,8 @@ public class OverScrollListView extends ListView {
     private boolean mMarkAutoRefresh;
     private Object mBizContextForRefresh;
 
+    private VelocityTracker mVelocityTracker;
+
     public OverScrollListView(Context context) {
         super(context);
         init(context);
@@ -114,6 +116,8 @@ public class OverScrollListView extends ListView {
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
         mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
+
+        mVelocityTracker = VelocityTracker.obtain();
     }
 
     public void setPullToRefreshHeaderView(View headerView) {
@@ -276,7 +280,7 @@ public class OverScrollListView extends ListView {
     }
 
     protected boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
-        if (!isTouchEvent && mScroller.isFinished() && mVelocityTracker != null) {
+        if (!isTouchEvent && mScroller.isFinished()) {
             mVelocityTracker.computeCurrentVelocity((int)(16 * mScreenDensity), mMaximumVelocity);
             int yVelocity = (int) mVelocityTracker.getYVelocity(0);
 
@@ -286,14 +290,6 @@ public class OverScrollListView extends ListView {
             }
         }
         return true;
-    }
-
-    private void initOrResetVelocityTracker() {
-        if (mVelocityTracker == null) {
-            mVelocityTracker = VelocityTracker.obtain();
-        } else {
-            mVelocityTracker.clear();
-        }
     }
 
     @Override
@@ -308,15 +304,13 @@ public class OverScrollListView extends ListView {
                 mIsTouching = true;
                 mCancellingRefreshing = false;
 
-                initOrResetVelocityTracker();
+                mVelocityTracker.clear();
                 mVelocityTracker.addMovement(ev);
                 break;
         }
         return super.onInterceptTouchEvent(ev);
     }
 
-
-    private VelocityTracker mVelocityTracker;
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
