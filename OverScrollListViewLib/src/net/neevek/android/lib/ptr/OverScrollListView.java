@@ -6,10 +6,7 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.view.*;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.Scroller;
+import android.widget.*;
 
 /**
  * @author neevek <i@neevek.net>
@@ -377,6 +374,14 @@ public class OverScrollListView extends ListView {
             return super.onTouchEvent(ev);
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            ListAdapter listAdapter = getAdapter();
+            if (listAdapter instanceof HeaderViewListAdapter) {
+                listAdapter = ((HeaderViewListAdapter) listAdapter).getWrappedAdapter();
+                throw new IllegalStateException(e.getMessage() + ", adapter=["+ listAdapter.getClass() +"]", e);
+            }
+            throw e;
         }
 
         return false;
