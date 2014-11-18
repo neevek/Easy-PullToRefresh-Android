@@ -142,6 +142,21 @@ public class OverScrollListView extends ListView {
     }
 
     @Override
+    protected void layoutChildren() {
+        try {
+            super.layoutChildren();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            ListAdapter listAdapter = getAdapter();
+            if (listAdapter instanceof HeaderViewListAdapter) {
+                listAdapter = ((HeaderViewListAdapter) listAdapter).getWrappedAdapter();
+                throw new RuntimeException(e.getMessage() + ", adapter=["+ listAdapter.getClass() +"]", e);
+            }
+            throw e;
+        }
+    }
+
+    @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
 
