@@ -139,7 +139,7 @@ public class OverScrollListView extends ListView {
             throw new IllegalArgumentException("Pull-to-refresh header view must have " +
                     "the following layout hierarchy: LinearLayout->LinearLayout->[either a LinearLayout or RelativeLayout]");
         }
-        addHeaderView(headerView);
+        addHeaderView(headerView, null, false);
     }
 
     @Override
