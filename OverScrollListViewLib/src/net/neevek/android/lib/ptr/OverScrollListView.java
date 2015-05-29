@@ -244,7 +244,9 @@ public class OverScrollListView extends ListView {
     }
 
     public void finishRefreshing(final Runnable runnable, int delayedDuration) {
-        mOrigHeaderView.onFinishRefreshing();
+        if (mOrigHeaderView != null) {
+            mOrigHeaderView.onFinishRefreshing();
+        }
         postDelayed(new Runnable() {
             @Override
             public void run() {
