@@ -249,7 +249,9 @@ public class OverScrollListView extends ListView {
             @Override
             public void run() {
                 finishRefreshing();
-                postDelayed(runnable, DEFAULT_MAX_OVER_SCROLL_DURATION);
+                if (runnable != null) {
+                    postDelayed(runnable, DEFAULT_MAX_OVER_SCROLL_DURATION);
+                }
             }
         }, delayedDuration);
     }
