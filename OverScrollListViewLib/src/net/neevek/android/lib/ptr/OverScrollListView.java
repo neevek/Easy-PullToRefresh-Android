@@ -37,6 +37,7 @@ import android.widget.*;
  */
 public class OverScrollListView extends ListView {
     private final static int DEFAULT_MAX_OVER_SCROLL_DURATION = 350;
+    private final static int DEFAULT_FINISH_DELAYED_DURATION = 800;
 
     // boucing for a normal touch scroll gesture(happens right after the finger leaves the screen)
     private Scroller mScroller;
@@ -236,6 +237,21 @@ public class OverScrollListView extends ListView {
             springBack(-mHeaderViewHeight + getScrollY());
 //            setSelection(0);
         }
+    }
+
+    public void finishRefreshing(Runnable runnable) {
+        finishRefreshing(runnable, DEFAULT_FINISH_DELAYED_DURATION);
+    }
+
+    public void finishRefreshing(final Runnable runnable, int delayedDuration) {
+        mOrigHeaderView.onFinishRefreshing();
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                finishRefreshing();
+                postDelayed(runnable, DEFAULT_MAX_OVER_SCROLL_DURATION);
+            }
+        }, delayedDuration);
     }
 
     public void finishRefreshingAndHideHeaderViewWithoutAnimation() {
@@ -788,6 +804,7 @@ public class OverScrollListView extends ListView {
 
         void onStartRefreshing();
         void onEndRefreshing();
+        void onFinishRefreshing();
     }
 
     /**
