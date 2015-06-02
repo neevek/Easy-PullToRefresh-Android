@@ -29,6 +29,7 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
     private String mPullText = "Pull to refresh";
     private String mReleaseText = "Release to refresh";
     private String mRefreshText = "Refreshing...";
+    private String mFinishText = "Refresh complete";
 
     public PullToRefreshHeaderView(Context context) {
         super(context);
@@ -99,6 +100,11 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
         mTvRefresh.setVisibility(GONE);
     }
 
+    @Override
+    public void onFinishRefreshing() {
+        mTvRefresh.setText(mFinishText);
+    }
+
     public void setPullText(String pullText) {
         mPullText = pullText;
     }
@@ -109,5 +115,9 @@ public class PullToRefreshHeaderView extends LinearLayout implements OverScrollL
 
     public void setRefreshText(String refreshText) {
         mRefreshText = refreshText;
+    }
+
+    public void setFinishText(String finishText) {
+        mFinishText = finishText;
     }
 }
