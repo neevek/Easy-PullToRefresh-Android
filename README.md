@@ -1,3 +1,10 @@
+Demo
+====
+
+Install the Demo APK and get a feel of **how smooth it is**.
+
+[![OverScrollListView Demo](https://github.com/neevek/Easy-PullToRefresh-Android/raw/master/DemoAPK/OverScrollListViewQRCode.png)](https://github.com/neevek/Easy-PullToRefresh-Android/raw/master/DemoAPK/OverScrollListViewDemo.apk)
+
 Easy-PullToRefresh-Android
 ==========================
 
